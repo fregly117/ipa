@@ -1,0 +1,39 @@
+name: Build iOS IPA
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Archive
+        run: |
+          cd ios
+          xcodebuild -project PusulAI.xcodeproj \
+            -scheme PusulAI \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -archivePath ../build/PusulAI.xcarchive \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            clean archive
+
+      - name: Package IPA
+        run: |
+          mkdir -p build/Payload
+          cp -R build/PusulAI.xcarchive/Products/Applications/PusulAI.app build/Payload/
+          cd build
+          zip -r -y PusulAI-Pro.ipa Payload
+
+      - name: Upload IPA Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: PusulAI-Pro-iOS
+          path: build/PusulAI-Pro.ipa
